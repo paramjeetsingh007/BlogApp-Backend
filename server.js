@@ -26,6 +26,10 @@ app.use(express.json())
 app.use(morgan('dev'))
 
 // routes
+app.get("/", (req, res) => {
+    res.send("Backend is running successfully!");
+  });
+  
 app.use('/api/v1/user',userRoutes)
 app.use('/api/v1/blog',blogRoutes)
 
