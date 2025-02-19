@@ -14,9 +14,18 @@ connectDB();
 // Initialize Express app
 const app = express();
 
-// ✅ Middleware (Ensure JSON parsing happens before routes)
+// ✅ Configure CORS properly
+app.use(
+    cors({
+        origin: "https://blog-app-frontend-puce-alpha.vercel.app", // Allow frontend domain
+        methods: ["GET", "POST", "PUT", "DELETE"], // Allowed methods
+        allowedHeaders: ["Content-Type", "Authorization"], // Allowed headers
+        credentials: true, // If using cookies or authentication tokens
+    })
+);
+
+// Middleware
 app.use(express.json());
-app.use(cors());
 app.use(morgan("dev"));
 
 // Routes
