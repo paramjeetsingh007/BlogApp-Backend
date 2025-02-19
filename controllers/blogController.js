@@ -70,29 +70,29 @@ exports.updateBlogController = async (req, res) => {
         const { id } = req.params;
         const { title, description, image } = req.body;
 
-        const blog = await blogModel.findByIdAndUpdate(id, req.body, { new: true });
-
-        if (!blog) {
-            return res.status(404).send({
-                success: false,
-                message: 'Blog not found',
-            });
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid blog ID" });
         }
 
-        return res.status(200).send({
-            success: true,
-            message: 'Blog Updated!',
-            blog,
-        });
+        // Find and update blog
+        const blog = await blogModel.findByIdAndUpdate(
+            id,
+            { title, description, image },
+            { new: true }
+        );
+
+        if (!blog) {
+            return res.status(404).json({ success: false, message: "Blog not found" });
+        }
+
+        return res.status(200).json({ success: true, message: "Blog Updated!", blog });
     } catch (error) {
-        console.error(error);
-        return res.status(400).send({
-            success: false,
-            message: 'Error while updating blog',
-            error: error.message,
-        });
+        console.error("Update Error:", error);
+        return res.status(500).json({ success: false, message: "Error while updating blog" });
     }
 };
+
 
 // Get Single Blog
 exports.getBlogByIdController = async (req, res) => {
@@ -127,29 +127,32 @@ exports.deleteBlogController = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Find the blog by ID
-        const blog = await BlogModel.findById(id);
+        // Validate ID
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ success: false, message: "Invalid blog ID" });
+        }
+
+        // Find blog
+        const blog = await blogModel.findById(id);
         if (!blog) {
             return res.status(404).json({ success: false, message: "Blog not found" });
         }
 
         // Find the user who owns the blog
-        const user = await UserModel.findById(blog.user);
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+        const user = await userModel.findById(blog.user);
+        if (user) {
+            // Remove the blog from the user's blogs array
+            user.blogs = user.blogs.filter((blogId) => blogId.toString() !== id);
+            await user.save();
         }
 
-        // Remove the blog ID from the user's blogs array
-        user.blogs = user.blogs.filter(blogId => blogId.toString() !== id);
-        await user.save();
-
         // Delete the blog
-        await BlogModel.findByIdAndDelete(id);
+        await blogModel.findByIdAndDelete(id);
 
-        res.status(200).json({ success: true, message: "Blog deleted successfully" });
+        return res.status(200).json({ success: true, message: "Blog deleted successfully" });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Internal Server Error" });
+        console.error("Delete Error:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
 
